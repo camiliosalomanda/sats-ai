@@ -1,5 +1,5 @@
 from nostr_dvm.tasks.textgeneration import TextGenerationTask
-from inference import run_inference
+from inference import run_inference_http
 from lightning import get_invoice_from_lnaddress, calculate_sats
 
 
@@ -13,8 +13,7 @@ class SatsAINode(TextGenerationTask):
         prompt = event.content
         max_bid_msats = int(self._get_tag(event, 'bid', default='1000'))
 
-        result = run_inference(
-            self.config.model_path,
+        result = await run_inference_http(
             prompt,
             max_tokens=self.config.max_tokens,
         )

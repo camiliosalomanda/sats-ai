@@ -1,7 +1,7 @@
 import asyncio
 import json
 from config import Config
-from inference import run_inference
+from inference import run_inference_http
 from data_fetcher import fetch_resolution_data
 from htlc_manager import HTLCManager
 
@@ -109,8 +109,7 @@ async def resolve_market(
     )
 
     # Run local inference
-    result = run_inference(
-        config.model_path,
+    result = await run_inference_http(
         prompt,
         max_tokens=256,
         temp=0.1,  # low temp for deterministic resolution

@@ -1,14 +1,16 @@
 import json
 import asyncio
+from nostr_client import privkey_to_pubkey
 
 
 async def publish_node_announcement(client, config):
     """Publish kind:31990 node announcement (NIP-89 app handler)."""
+    pubkey = privkey_to_pubkey(config.nostr_privkey)
     event = {
         'kind': 31990,
         'tags': [
             ['k', '5100'],
-            ['d', config.nostr_privkey],  # replaceable event identifier
+            ['d', pubkey],  # replaceable event identifier
             ['model', config.model_name],
             ['model-id', config.model_id],
             ['ln-address', config.ln_address],

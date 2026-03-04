@@ -1,14 +1,21 @@
+const TXID_RE = /^[a-f0-9]{64}$/
+
 export async function verifyJobAnchor(
   txid: string,
   jobHash: string,
 ): Promise<boolean> {
+  if (!TXID_RE.test(txid)) {
+    throw new Error('Invalid txid format')
+  }
+
   const electrsUrl = process.env.ELECTRS_URL || process.env.NEXT_PUBLIC_ELECTRS_URL
 
   if (!electrsUrl) {
     throw new Error('ELECTRS_URL not configured')
   }
 
-  const res = await fetch(`${electrsUrl}/tx/${txid}`)
+  const url = new URL(`/tx/${txid}`, electrsUrl)
+  const res = await fetch(url.toString())
   const tx = await res.json()
 
   const opReturn = tx.vout?.find(
@@ -65,9 +72,14 @@ export async function verifyMarketResolution(
     throw new Error('ELECTRS_URL not configured')
   }
 
+  if (!TXID_RE.test(txid)) {
+    throw new Error('Invalid txid format')
+  }
+
   const expectedHash = await computeMarketHash(marketId, outcome, consensusEventId)
 
-  const res = await fetch(`${electrsUrl}/tx/${txid}`)
+  const url = new URL(`/tx/${txid}`, electrsUrl)
+  const res = await fetch(url.toString())
   const tx = await res.json()
 
   const opReturn = tx.vout?.find(

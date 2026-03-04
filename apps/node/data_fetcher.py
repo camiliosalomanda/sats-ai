@@ -40,13 +40,21 @@ async def fetch_resolution_data(
     fetcher = fetchers.get(category, fetch_news_data)
     try:
         return await fetcher(criteria, market)
-    except Exception as e:
-        return (
-            f'ERROR: Failed to fetch resolution data: {e}\n'
-            f'Evidence status: UNAVAILABLE\n'
-            f'Recommendation: Vote INVALID due to data retrieval failure.',
-            ['error: data fetch failed'],
-        )
+    except httpx.TimeoutException:
+        err_type = 'timeout'
+    except httpx.HTTPStatusError as e:
+        err_type = f'HTTP {e.response.status_code}'
+    except Exception:
+        err_type = 'unknown'
+
+    # Log sanitized error (never include raw exception which may contain API keys)
+    print(f'[data_fetcher] Fetch failed for category={category}: {err_type}')
+    return (
+        f'ERROR: Failed to fetch resolution data ({err_type}).\n'
+        f'Evidence status: UNAVAILABLE\n'
+        f'Recommendation: Vote INVALID due to data retrieval failure.',
+        [f'error: data fetch failed ({err_type})'],
+    )
 
 
 async def fetch_crypto_data(
@@ -195,8 +203,8 @@ async def fetch_news_data(
                 'q': query,
                 'sortBy': 'relevancy',
                 'pageSize': '10',
-                'apiKey': api_key,
             },
+            headers={'X-Api-Key': api_key},
             timeout=15,
         )
         data = resp.json()

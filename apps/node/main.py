@@ -5,13 +5,14 @@ import subprocess
 from config import Config
 from dvm_handler import SatsAINode
 from reputation import announce_loop
-from nostr_dvm.utils.nostr_utils import connect_to_relays
+from nostr_client import connect_to_relays
 
 
 def _get_server_binary() -> str:
     """Find llama-server binary."""
     candidates = [
         os.environ.get('LLAMA_SERVER', ''),
+        './llama-bin/llama-server.exe',
         './llama.cpp/llama-server.exe',
         './llama.cpp/llama-server',
         '/llama.cpp/llama-server',
@@ -42,7 +43,7 @@ def start_llama_server(config: Config) -> subprocess.Popen | None:
         binary,
         '-m', config.model_path,
         '--port', port,
-        '-ngl', '0',
+        '-ngl', os.environ.get('GPU_LAYERS', '99'),
         '-c', '2048',
         '--threads', str(os.cpu_count() or 4),
     ]

@@ -162,8 +162,9 @@ async def monitor_consensus(
 
     # Check if we should call consensus (lowest pubkey lexicographically)
     resolver_pubkeys = sorted(votes.keys())
-    # Use our pubkey from config (derived from privkey)
-    my_pubkey = config.nostr_privkey  # TODO: derive actual pubkey
+    # Derive our public key from private key
+    from nostr_client import privkey_to_pubkey
+    my_pubkey = privkey_to_pubkey(config.nostr_privkey)
 
     if resolver_pubkeys and resolver_pubkeys[0] <= my_pubkey:
         # We call consensus

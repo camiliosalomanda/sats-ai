@@ -8,6 +8,7 @@ dist/
 *.gguf
 models/
 llama.cpp/
+llama-bin/
 __pycache__/
 *.pyc
 .venv/

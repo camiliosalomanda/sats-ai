@@ -6,7 +6,20 @@ Supports LND REST API and CLN REST API (auto-detect from env).
 import os
 import hashlib
 import secrets
+import ssl
 import httpx
+
+
+def _make_tls_context() -> ssl.SSLContext | bool:
+    """Build TLS context for Lightning node connections.
+
+    Uses custom CA cert if LN_TLS_CERT is set, otherwise standard verification.
+    """
+    cert_path = os.environ.get('LN_TLS_CERT', '')
+    if cert_path and os.path.isfile(cert_path):
+        ctx = ssl.create_default_context(cafile=cert_path)
+        return ctx
+    return True  # default system CA verification
 
 
 class HTLCManager:
@@ -16,6 +29,7 @@ class HTLCManager:
         self.cln_url = os.environ.get('CLN_REST_URL', '')
         self.cln_rune = os.environ.get('CLN_RUNE', '')
         self.backend = self._detect_backend()
+        self._tls_verify = _make_tls_context()
 
         # Track our preimages locally: payment_hash -> preimage
         self._preimages: dict[str, str] = {}
@@ -54,7 +68,7 @@ class HTLCManager:
     ) -> dict | None:
         """Create a hold invoice via LND REST API."""
         try:
-            async with httpx.AsyncClient(verify=False) as client:
+            async with httpx.AsyncClient(verify=self._tls_verify) as client:
                 resp = await client.post(
                     f'{self.lnd_url}/v2/invoices/hodl',
                     json={
@@ -78,7 +92,7 @@ class HTLCManager:
     ) -> dict | None:
         """Create a hold invoice via CLN REST API."""
         try:
-            async with httpx.AsyncClient(verify=False) as client:
+            async with httpx.AsyncClient(verify=self._tls_verify) as client:
                 resp = await client.post(
                     f'{self.cln_url}/v1/holdinvoice',
                     json={
@@ -128,7 +142,7 @@ class HTLCManager:
     async def _settle_invoice(self, payment_hash: str, preimage: str):
         """Settle a hold invoice by revealing the preimage."""
         try:
-            async with httpx.AsyncClient(verify=False) as client:
+            async with httpx.AsyncClient(verify=self._tls_verify) as client:
                 if self.backend == 'lnd':
                     await client.post(
                         f'{self.lnd_url}/v2/invoices/settle',
@@ -149,7 +163,7 @@ class HTLCManager:
     async def _cancel_invoice(self, payment_hash: str):
         """Cancel a hold invoice (slash the stake)."""
         try:
-            async with httpx.AsyncClient(verify=False) as client:
+            async with httpx.AsyncClient(verify=self._tls_verify) as client:
                 if self.backend == 'lnd':
                     await client.post(
                         f'{self.lnd_url}/v2/invoices/cancel',

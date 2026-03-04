@@ -1,0 +1,20 @@
+services:
+  node:
+    build: ./apps/node
+    volumes:
+      - ./models:/models
+      - ./data:/data
+    env_file: ./apps/node/.env
+    environment:
+      - RESOLVER_MODE=true
+    restart: unless-stopped
+    ports:
+      - "8765:8765"
+
+  relay:
+    image: scsibug/nostr-rs-relay:latest
+    volumes:
+      - ./relay-data:/usr/src/app/db
+    ports:
+      - "7777:7777"
+    restart: unless-stopped

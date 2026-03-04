@@ -1,0 +1,15 @@
+node_modules/
+.next/
+out/
+dist/
+.env
+.env.local
+.env.*.local
+*.gguf
+models/
+__pycache__/
+*.pyc
+.venv/
+*.egg-info/
+.DS_Store
+Thumbs.db

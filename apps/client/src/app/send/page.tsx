@@ -16,26 +16,63 @@ interface LogEntry {
   type: 'info' | 'success' | 'error' | 'event'
 }
 
-const MODELS = [
-  { id: 'llama3.2-3b', name: 'Llama 3.2 3B', desc: 'Fast, general purpose' },
-  { id: 'llama3.2-1b', name: 'Llama 3.2 1B', desc: 'Ultra-fast, lightweight' },
-  { id: 'mistral-7b', name: 'Mistral 7B', desc: 'Strong reasoning' },
-  { id: 'phi-3-mini', name: 'Phi-3 Mini', desc: 'Microsoft, efficient' },
-]
+interface ModelOption {
+  id: string
+  name: string
+  desc: string
+}
 
 function timestamp() {
   return new Date().toLocaleTimeString('en-US', { hour12: false })
 }
 
 export default function SendPage() {
+  const [models, setModels] = useState<ModelOption[]>([])
   const [prompt, setPrompt] = useState('')
-  const [model, setModel] = useState(MODELS[0].id)
+  const [model, setModel] = useState('')
   const [maxSats, setMaxSats] = useState(10)
   const [status, setStatus] = useState<JobStatus>('idle')
   const [result, setResult] = useState('')
   const [invoice, setInvoice] = useState('')
   const [logs, setLogs] = useState<LogEntry[]>([])
   const logRef = useRef<HTMLDivElement>(null)
+
+  // Fetch available models from online nodes
+  useEffect(() => {
+    async function loadModels() {
+      try {
+        const { supabase } = await import('@/lib/supabase')
+        const { data, error } = await supabase
+          .from('nodes')
+          .select('model_id, model_name, sats_per_1k')
+          .eq('online', true)
+          .order('reputation', { ascending: false })
+
+        if (error) throw error
+        if (data && data.length > 0) {
+          const unique = data.reduce<ModelOption[]>((acc, node) => {
+            if (!acc.find((m) => m.id === node.model_id)) {
+              acc.push({
+                id: node.model_id,
+                name: node.model_name,
+                desc: `${node.sats_per_1k} sat/1k tokens`,
+              })
+            }
+            return acc
+          }, [])
+          setModels(unique)
+          setModel(unique[0].id)
+          return
+        }
+      } catch {
+        // fall through to default
+      }
+      const fallback = [{ id: 'llama3.1-8b', name: 'Llama 3.1 8B', desc: 'General purpose' }]
+      setModels(fallback)
+      setModel(fallback[0].id)
+    }
+    loadModels()
+  }, [])
 
   const addLog = (message: string, type: LogEntry['type'] = 'info') => {
     setLogs((prev) => [...prev, { time: timestamp(), message, type }])
@@ -118,7 +155,7 @@ export default function SendPage() {
               Model
             </label>
             <div className="grid grid-cols-2 gap-2">
-              {MODELS.map((m) => (
+              {models.map((m) => (
                 <button
                   key={m.id}
                   onClick={() => setModel(m.id)}

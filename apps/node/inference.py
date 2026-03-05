@@ -18,18 +18,39 @@ class InferenceResult:
 
 LLAMA_SERVER_URL = os.environ.get('LLAMA_SERVER_URL', 'http://127.0.0.1:8080')
 
+SYSTEM_PROMPT = (
+    'You are a precise, factual AI assistant running on the SATS-AI decentralized '
+    'inference network. Be concise, accurate, and stay on topic. Do not ramble or '
+    'repeat yourself. If you are unsure, say so.'
+)
+
+
+def _format_llama_prompt(system: str, user: str) -> str:
+    """Format prompt using Llama 3.x chat template (no tool calling)."""
+    return (
+        f'<|begin_of_text|>'
+        f'<|start_header_id|>system<|end_header_id|>\n\n'
+        f'{system}<|eot_id|>'
+        f'<|start_header_id|>user<|end_header_id|>\n\n'
+        f'{user}<|eot_id|>'
+        f'<|start_header_id|>assistant<|end_header_id|>\n\n'
+    )
+
 
 async def run_inference_http(
     prompt: str,
     max_tokens: int = 512,
     temp: float = 0.7,
+    system_prompt: str | None = None,
 ) -> InferenceResult:
-    """Call a running llama-server via its /completion endpoint."""
+    """Call llama-server with properly templated chat prompt."""
+    formatted = _format_llama_prompt(system_prompt or SYSTEM_PROMPT, prompt)
+
     async with httpx.AsyncClient(timeout=300) as client:
         resp = await client.post(
             f'{LLAMA_SERVER_URL}/completion',
             json={
-                'prompt': prompt,
+                'prompt': formatted,
                 'n_predict': max_tokens,
                 'temperature': temp,
                 'stop': ['<|eot_id|>', '<|end_of_text|>'],

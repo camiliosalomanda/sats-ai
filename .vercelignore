@@ -1,0 +1,7 @@
+apps/node/
+models/
+*.gguf
+llama-bin/
+llama.cpp/
+.venv/
+__pycache__/

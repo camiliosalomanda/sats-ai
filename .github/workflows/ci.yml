@@ -1,0 +1,15 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+
+jobs:
+  ci:
+    uses: camiliosalomanda/shared-infra/.github/workflows/nextjs-ci.yml@main
+    with:
+      skip-format: true
+    secrets:
+      DOPPLER_TOKEN: ${{ secrets.DOPPLER_TOKEN }}

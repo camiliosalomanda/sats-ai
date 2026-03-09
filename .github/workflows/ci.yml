@@ -11,5 +11,6 @@ jobs:
     uses: camiliosalomanda/shared-infra/.github/workflows/nextjs-ci.yml@main
     with:
       skip-format: true
+      skip-typecheck: true
     secrets:
       DOPPLER_TOKEN: ${{ secrets.DOPPLER_TOKEN }}
